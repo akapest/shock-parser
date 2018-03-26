@@ -5,13 +5,15 @@ moment.locale('ru')
 
 import App from './App.vue'
 import Portfolios from './components/Portfolios.vue'
+import Images from './components/Images.vue'
 
 Vue.use(VueRouter)
 
 var router = new VueRouter({
     routes: [
         { path: '/', component: App },
-        { path: '/profiles', component: Portfolios }
+        { path: '/profiles', component: Portfolios },
+        { path: '/images', component: Images }
     ]
 })
 Vue.config.errorHandler = function (err, vm, info) {

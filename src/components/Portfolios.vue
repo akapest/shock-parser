@@ -60,9 +60,6 @@
         },
         components: {editable},
         watch: {
-            siteId(newValue){
-                this.getPortfolios(newValue)
-            }
         },
         mounted(){
             this.getPortfolios()
@@ -170,7 +167,7 @@
                     let id = crypto.createHash('md5').update(source).digest('hex')
                     let portfolioId = portfolio.name
                     let description = this.takeText($(el).find('.description'))
-                    let position = portfolio.fetch.page*100 + i
+                    let position = portfolio.fetch.page*100 + i + 1
                     return {id, source, link, portfolioId, description, position}
                 }).toArray()
                 return db.saveItems(Image, images) // todo error
