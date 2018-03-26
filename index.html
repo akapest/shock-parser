@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>WGBOT</title>
+        <link rel="stylesheet" href="assets/css/photon.css">
+        <link rel="stylesheet" href="src/styles.css">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+        <style type="text/css">
+            .sidebar a {
+                color: wheat;
+            }
+            .sidebar {
+                background: #334;
+                width: 23%;
+            }
+            .container {
+                background-color: #fff;
+            }
+            input, select:not([multiple]) {
+               height: 32px;
+            }
+            .nav-group-item{
+                text-transform: capitalize ;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="app" class="wgbot">
+            <div class="window">
+                <div class="window-content">
+                    <div class="pane-group">
+                        <div class="pane-sm sidebar">
+                            <nav class="nav-group">
+                                <h5 class="nav-group-title">App</h5>
+                                <router-link class="nav-group-item" to="/"><span class="icon icon-home"></span>Dashboard</router-link>
+                                <!--<router-link class="nav-group-item" to="/config"><span class="icon icon-gauge"></span>Settings</router-link>-->
+                                <router-link class="nav-group-item" to="/profiles"><span class="icon icon-users"></span>Portfolios</router-link>
+                                <!--<router-link class="nav-group-item" to="/ads"><span class="icon"></span>Ads list</router-link>-->
+
+                                <!--<router-link class="nav-group-item" to="/contacts"><span class="icon"></span>Contacts</router-link>-->
+                            </nav>
+                        </div>
+                        <div class="pane" style="padding: 10px;">
+                            <router-view></router-view>
+                        </div>
+                    </div>
+                </div>
+                <footer class="toolbar toolbar-footer">
+                </footer>
+            </div>
+        </div>
+        <script src="dist/vendor.bundle.js"></script>
+        <script src="dist/main.bundle.js"></script>
+    </body>
+</html>

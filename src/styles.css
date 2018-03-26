@@ -1,0 +1,202 @@
+/*
+
+*/
+a { cursor: pointer; }
+body .fl { float: left; }
+body .fr { float: right; }
+body .cb { clear: both; }
+body .centered { margin: auto; }
+body .hw { width: 50%; }
+
+body .pxs { padding: 4px; }
+body .ps { padding: 8px; }
+body .pm { padding: 16px; }
+body .pl { padding: 32px; }
+body .pxl { padding: 64px; }
+
+body .mxs { margin: 4px; }
+body .ms { margin: 8px; }
+body .mm { margin: 16px; }
+body .ml { margin: 32px; }
+body .mxl { margin: 64px; }
+
+body .mrxs { margin-right: 4px; }
+body .mrs { margin-right: 8px; }
+body .mrm { margin-right: 16px; }
+body .mrl { margin-right: 32px; }
+body .mrxl { margin-right: 64px; }
+
+body .mlxs { margin-left: 4px; }
+body .mls { margin-left: 8px; }
+body .mlm { margin-left: 16px; }
+body .mll { margin-left: 32px; }
+body .mlxl { margin-left: 64px; }
+body .mlxxl { margin-left: 128px; }
+
+body .mtxs { margin-top: 4px; }
+body .mts { margin-top: 8px; }
+body .mtm { margin-top: 16px; }
+body .mtl { margin-top: 32px; }
+body .mtxl { margin-top: 64px; }
+
+body .mbxs { margin-bottom: 4px; }
+body .mbs { margin-bottom: 8px; }
+body .mbm { margin-bottom: 16px; }
+body .mbl { margin-bottom: 32px; }
+body .mbxl { margin-bottom: 64px; }
+
+body .mhxs { margin-bottom: 4px; margin-top: 4px; }
+body .mhs { margin-bottom: 8px; margin-top: 8px; }
+body .mhm { margin-bottom: 16px; margin-top: 16px;}
+body .mhl { margin-bottom: 32px; margin-top: 32px; }
+body .mhxl { margin-bottom: 64px; margin-top: 64px; }
+
+body .mvxs { margin-left: 4px; margin-right: 4px; }
+body .mvs { margin-left: 8px; margin-right: 8px; }
+body .mvm { margin-left: 16px; margin-right: 16px;}
+body .mvl { margin-left: 32px; margin-right: 32px; }
+body .mvxl { margin-left: 64px; margin-right: 64px; }
+
+.wgbot *{
+    user-select: initial;
+    outline: initial;
+}
+/* FORM */
+.wgbot label {
+    margin-bottom: 0;
+    vertical-align: middle;
+}
+.wgbot input[type="checkbox"] ~ label, .pointer{
+    cursor: pointer;
+}
+input[type="text"], input[type="number"] {
+    cursor: text;
+}
+/* INTERACTIVE */
+.pointer, .wgbot button { cursor:pointer; }
+.wgbot select, .wgbot option{
+    cursor: pointer;
+    background: white;
+}
+.wgbot select:hover{
+    background: rgba(33, 33, 33, 0.2)
+}
+input:hover{
+    background: rgba(33, 33, 33, 0.05)
+}
+.wgbot input, button, select {
+    border: 1px solid cadetblue;
+}
+.wgbot a, button, input, select, trnstn {
+    -webkit-transition: box-shadow 0.2s cubic-bezier(0.4, 0, 1, 1), background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: box-shadow 0.2s cubic-bezier(0.4, 0, 1, 1), background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.wgbot input[type="checkbox"] {
+    margin-bottom: -5px;
+    vertical-align:bottom;
+    cursor: pointer;
+}
+.bttn:disabled{
+    background: rgba(10,10,10,0);
+    color: #807c7f;
+}
+.bttn:not([disabled]):hover{
+    background: rgba(33, 33, 33, 0.2);
+}
+.bttn.bttn-primary {
+    background-color: cadetblue;
+}
+.bttn.bttn-primary:not([disabled]):hover {
+    background-color: #30646E;
+}
+.bttn.bttn-secondary {
+    background-color: wheat;
+}
+.bttn {
+    background-color: white;
+    border: 1px solid cadetblue;
+    font-family: "Roboto", "Helvetica", "Arial", sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: 0;
+    position: relative;
+    display: inline-block;
+    height: 2.6rem;
+}
+/*PAGINATION*/
+.pagination {
+    overflow-x: auto;
+}
+.wgbot .page-item.active .page-link {
+    z-index: 2;
+    color: rgb(255, 255, 255);
+    background-color: cadetblue;
+    border-color: cadetblue;
+}
+.wgbot .page-link {
+    color: cadetblue;
+    cursor: pointer;
+}
+.wgbot .page-link:focus, .wgbot .page-link:hover {
+    color: rgb(51, 51, 68);
+}
+/*NAVIGATION*/
+.nav-group-item {
+    cursor: pointer;
+}
+.nav-group-item{
+    margin-top: 8px;
+    font-size: 16px;
+}
+.nav-group-item:hover{
+    background: wheat;
+    color: black;
+}
+.nav-group-item:active {
+   background: cadetblue;
+}
+/*OTHER*/
+.wgbot .h5{
+    margin-bottom: 0px;
+}
+.wgbot .badge {
+    vertical-align: 50%;
+}
+.row {
+    display: -ms-flexbox;
+    display: flex;
+    -ms-flex-wrap: wrap;
+    flex-wrap: wrap;
+    margin: 0;
+}
+
+.raised {
+    color: #212121;
+    padding: 0 0.4rem;
+    border-radius: 0.2rem;
+    background: transparent;
+}
+.bttn {
+    -webkit-box-orient: horizontal;
+    -webkit-box-direction: normal;
+    -webkit-flex-direction: row;
+    -ms-flex-direction: row;
+    flex-direction: row;
+    -webkit-align-content: center;
+    -ms-flex-line-pack: center;
+    align-content: center;
+    -webkit-box-align: center;
+    -webkit-align-items: center;
+    -ms-flex-align: center;
+    -ms-grid-row-align: center;
+    align-items: center;
+    -webkit-box-pack: center;
+    -webkit-justify-content: center;
+    -ms-flex-pack: center;
+    justify-content: center;
+    text-align: center;
+    text-decoration: none;
+    white-space: nowrap;
+}
