@@ -1,7 +1,7 @@
 <template>
     <div class="mvs">
-        <button class="bttn bttn-primary" @click="toggle()" :disabled="disabled || toggleDisabled">{{actionName()}}</button>
-        <span v-show="state == 'running'">cycle: {{cycleNumber}} {{lastResult}}</span>
+        <button class="bttn bttn-primary" @click="toggle()" :disabled="toggleDisabled">{{actionName()}}</button>
+        <span v-show="state == 'running'">{{runnable.info(cycleNumber)}}</span>
     </div>
 </template>
 <script>
@@ -17,9 +17,9 @@
         return Promise.resolve()
     }
     export default {
-        props: ['runnableFctry', 'name', 'disabled'],
+        props: ['runnableFactory', 'info'],
         data(){
-            return {state:'idle', cycleNumber: 0, lastResult: ''}
+            return {state:'idle', cycleNumber: 0, lastResult: '', runnable:{info:()=>{}}}
         },
         computed:{
             toggleDisabled(){
@@ -28,8 +28,8 @@
         },
         methods: {
             actionName(){
-                if (this.state == 'running' || this.state == 'starting') return 'stop'
-                if (this.state == 'idle' ||  this.state == 'stopping') return 'start'
+                if (this.state == 'running' || this.state == 'starting') return 'Остановить'
+                if (this.state == 'idle' ||  this.state == 'stopping') return 'Начать сбор'
                 throw new Error('Unexpected run state: ' + this.state)
             },
             errorHandler(err){
@@ -47,10 +47,10 @@
             },
             runNextCycle() {
                 return this.runnable.cycle.call(this.runnable, this.cycleNumber)
-                .then(({error, done, result}) => {
+                .then(({error, done, result}={}) => {
                     this.cycleNumber++
                     if (!error && !done && !result){
-                        throw new Error('Cycle result should contain one of props from {error,  done, result}')
+                        alert('Cycle result should contain one of props from {error,  done, result}') // dev error
                     }
                     if (error) {
                         this.$emit('error', error)
@@ -70,7 +70,7 @@
             startCycling(){
                 this.cycleNumber = 0
                 this.lastResult = ''
-                this.runnable = this.runnableFctry()
+                this.runnable = this.runnableFactory()
                 this.setState('starting')
                 ensure(this.runnable, 'startPromise').then(()=>{
                     this.setState('running')

@@ -10,6 +10,7 @@
     import o2html from './components/o2html.vue'
     import o2row from './components/o2row.vue'
     import editable from './components/editable.vue'
+    import runner from './components/runner.vue'
     import Vue from 'vue'
     import all from './directives.coffee'
     import {Pagination} from 'vue-pagination-2';
@@ -28,6 +29,7 @@
     Vue.component('o2html', o2html);
     Vue.component('o2row', o2row);
     Vue.component('editable', editable);
+    Vue.component('runner', runner);
 
     Vue.directive('focus', {
         inserted (el) {

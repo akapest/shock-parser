@@ -31,6 +31,9 @@
             <button class="bttn" @click="addAccount">Добавить</button>
             <!--<button class="bttn" @click="remove">Remove all portfolios</button>-->
         </div>
+        <div class="mhm">
+            <runner :runnableFactory="getGlobalParser"/>
+        </div>
     </div>
 </template>
 
@@ -44,15 +47,49 @@
     const defaultName = ''
     import ExternalSite from '../base/external-site.coffee'
     import crypto from 'crypto'
-
-    let meta = {
+    let shutter = new ExternalSite({
         id: 'SS',
         domain: 'shutterstock.com',
         url: 'https://www.shutterstock.com',
-    }
-
-    let shutter = new ExternalSite(meta)
+    })
     function defaultFetch(){ return  {running: false, page: 0, total: '?'} }
+    function takeText($el){
+        let text = $el.text()
+        if (!text) return ''
+        return text.trim()
+    }
+    function parseImages($, offset, portfolio) {
+        let images = $('.search-content li').map((i, el) => { // todo error
+            let source = $(el).find('img').attr('src')
+            let link = $(el).find('a').attr('href')
+            let id = crypto.createHash('md5').update(source).digest('hex')
+            let position = offset * 100 + i + 1
+            if (portfolio) {
+                let portfolioId = portfolio.name
+                let description = takeText($(el).find('.description'))
+                return {id, source, link, portfolioId, description, position}
+            } else {
+                return {id, source, link, position}
+            }
+        }).toArray()
+        return images
+    }
+    function parseTotal($){
+        const text = $('.page-max').first().text()
+        if (text) {
+            let units, thousands;
+            if (text.indexOf('.')){
+                [thousands, units] = text.split('.')
+            } else {
+                thousands = '0'
+                units = text
+            }
+            [thousands, units] = [parseInt(thousands), parseInt(units)]
+            return thousands*1000 + units
+        } else {
+            // todo error
+        }
+    }
 
     export default {
         data(){
@@ -130,7 +167,7 @@
                 portfolio.fetch.running = true
                 shutter.getPage('/g/' + portfolio.name) // todo error / retry?
                 .then(({$})=>{
-                    portfolio.fetch.total = parseInt($('.page-max').text()) // todo error
+                    portfolio.fetch.total = parseTotal($)
                     return this.parseNsaveImages($, portfolio)
                     .then(()=> {
                         portfolio.fetch.page = 1
@@ -155,21 +192,8 @@
                     });
                 })
             },
-            takeText($el){
-                let text = $el.text()
-                if (!text) return ''
-                return text.trim()
-            },
             parseNsaveImages($, portfolio){
-                let images = $('.search-content li').map((i, el) => { // todo error
-                    let source = $(el).find('img').attr('src')
-                    let link = $(el).find('a').attr('href')
-                    let id = crypto.createHash('md5').update(source).digest('hex')
-                    let portfolioId = portfolio.name
-                    let description = this.takeText($(el).find('.description'))
-                    let position = portfolio.fetch.page*100 + i + 1
-                    return {id, source, link, portfolioId, description, position}
-                }).toArray()
+                let images = parseImages($, portfolio.fetch.page, portfolio)
                 return db.saveItems(Image, images) // todo error
                 .then(()=>{
                     return db.count(Image, {query: {portfolioId: portfolio.name}})
@@ -181,6 +205,28 @@
                     })
                 })
             },
+            getGlobalParser(){
+                let totalPages = '?'
+                let runnable = {
+                    cycle(cycleN){
+                        let page = cycleN + 1
+                        let url = '/search?searchterm=vector&search_source=base_search_form&language=en&page='+page+'&sort=popular&image_type=vector&measurement=px&safe=true'
+                        return shutter.getPage(url)
+                        .then(({$})=>{
+                            let images = parseImages($, page-1)
+                            if (page == 1){
+                                totalPages = parseTotal($)
+                            }
+                            return {done:false, result:images}
+                        })
+                    },
+                    info(cycleN){
+                        return (cycleN+1) + '/' + totalPages
+                    }
+                }
+                return runnable
+            },
+
         }
     }
 </script>
