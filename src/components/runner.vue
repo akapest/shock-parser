@@ -1,7 +1,7 @@
 <template>
     <div class="mvs">
         <button class="bttn bttn-primary" @click="toggle()" :disabled="toggleDisabled">{{actionName()}}</button>
-        <span v-show="state == 'running'">{{runnable.info(cycleNumber)}}</span>
+        <span>{{runnable.info(cycleNumber)}}</span>
     </div>
 </template>
 <script>
@@ -33,6 +33,7 @@
                 throw new Error('Unexpected run state: ' + this.state)
             },
             errorHandler(err){
+                console.error(err)
                 this.state = 'idle'
                 this.$emit('error', err)
             },
@@ -72,7 +73,7 @@
                 this.lastResult = ''
                 this.runnable = this.runnableFactory()
                 this.setState('starting')
-                ensure(this.runnable, 'startPromise').then(()=>{
+                return ensure(this.runnable, 'startPromise').then(()=>{
                     this.setState('running')
                     return this.runNextCycle()
                 })
@@ -80,7 +81,7 @@
             },
             stopCycling(){
                 this.setState('stopping')
-                ensure(this.runnable, 'stopPromise').then(()=>{
+                return ensure(this.runnable, 'stopPromise').then(()=>{
                     this.setState('idle')
                 })
                 .catch(this.errorHandler)

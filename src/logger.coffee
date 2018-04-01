@@ -30,13 +30,13 @@ ignoredErrors = [
 
 createLogger = (namespace) ->
     throw new Error('Logger namespace should start with "bot:" value: ' + namespace) if namespace?.indexOf('bot:') != 0
-    devDebug = debug namespace
+    devDebug = -> console.log.apply(console.log, arguments)
     logger = {}
 
     for level in ['debug', 'info', 'warn', 'error', 'critical']
         createMethod = (level) ->
             return (args...) =>
-                devDebug.apply devDebug, args
+                console.log args
         logger[level] = createMethod level
 
     errorHandler = (level) ->

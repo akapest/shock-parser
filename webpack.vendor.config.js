@@ -22,7 +22,8 @@ module.exports = {
             "vue-tabs-component",
             'vue-router',
             'winston',
-            'winston-logrotate'
+            'winston-logrotate',
+            'proxy-lists'
         ],
     },
     target: 'electron-renderer',

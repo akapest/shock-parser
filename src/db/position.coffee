@@ -2,8 +2,9 @@ mongoose = require 'mongoose'
 _ = require 'lodash'
 
 positionSchema = mongoose.Schema(
-    id: {type: String, required:true, unique:true} # md5 hash of source
-    term: {type: String, required:true} # "global" / "portfolio" / keyword
+    _id: {type: String, required:true} # md5 hash of source
+    globalVector: {type: Boolean, default:false}
+    term: {type: String} # keyword
     position: {type:Number}
     date: {type:Date, required:true, index:true}
 )

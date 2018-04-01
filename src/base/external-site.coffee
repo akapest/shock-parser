@@ -18,7 +18,7 @@ DEFAULT_EXTERNAL_REQUEST_TIMEOUT = 12000 # ms
 
 
 class ExternalSite
-    constructor: ({url, xhrUrl, @defaultHeaders, @settings, @encoding, @defaultCheckLogged}={})->
+    constructor: ({url, xhrUrl, @defaultHeaders, @settings, @encoding, @defaultCheckLogged, @proxy}={})->
         @url = xhrUrl or url # api
         @origin = url # head
         @reset()
@@ -99,6 +99,10 @@ class ExternalSite
             httpOptions = {method, headers, json, body}
         else
             method ?= 'get'
+
+        if @proxy
+            p = @proxy
+            httpOptions.proxy = p.protocols[0] + '://' + p.ipAddress + ':' + (p.port || 80)
 
         @http @lastUrl, httpOptions, (error, response) =>
             error = @handleExternalErrorIfAny({error, response, relativeUrl, options, accountName})
