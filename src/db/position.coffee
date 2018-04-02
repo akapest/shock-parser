@@ -2,7 +2,7 @@ mongoose = require 'mongoose'
 _ = require 'lodash'
 
 positionSchema = mongoose.Schema(
-    _id: {type: String, required:true} # md5 hash of source
+    imageId: {type: String, required:true} # md5 hash of source
     globalVector: {type: Boolean, default:false}
     term: {type: String} # keyword
     position: {type:Number}

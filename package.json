@@ -6,9 +6,9 @@
   "scripts": {
     "predev-server": "cross-env NODE_ENV=development webpack --config webpack.vendor.config.js",
     "dev-server": "cross-env NODE_ENV=development webpack-dev-server --inline --hot --port 3000",
-    "dev": "cross-env NODE_ENV=development electron ./",
-    "build": "cross-env NODE_ENV=production webpack --progress --profile --colors",
-    "start": "cross-env NODE_ENV=production electron ./",
+    "dev": "cross-env NODE_ENV=development electron --js-flags=\"--expose-gc\" ./",
+    "build": "cross-env NODE_ENV=production webpack --progress --profile --colors --js-flags='--expose-gc'",
+    "start": "cross-env NODE_ENV=production electron --js-flags='--expose-gc' ./",
     "package": "npm run build; npm run package-osx; npm run package-win; npm run package-linux;",
     "package-osx": "electron-packager ./ --platform=darwin --arch=x64 --icon=assets/app.icns --out=package --asar=true --overwrite=force",
     "package-win": "electron-packager ./ --platform=win32 --arch=ia32 --icon=assets/app.ico --out=package --asar=true --overwrite=force",

@@ -5,7 +5,7 @@ ExternalSite = require './external-site.coffee'
 
 module.exports =
     init: ->
-        return if @inited
+        return Promise.resolve() if @inited
         @inited = true
         @all = []
         new Promise (resolve, reject)=>
@@ -24,12 +24,17 @@ module.exports =
                     resolve true
                 else
                     reject new Error('Failed to find any proxy')
+    inspect: ->
+        return {busy: @filter('busy'), active: @filter('active'), failed: @filter('failed')}
+
+    filter: (state) ->
+        _.filter @all, (p) -> p.state == state
 
     fetchPage: (url) ->
         proxy = this.next()
         if proxy == null
             console.log('no proxy available')
-            return Promise.resolve()
+            return Promise.delay(10*1000).then => @fetchPage(url)
         proxy.state = 'busy'
         proxy.site.getPage url
         .then (result) => 
@@ -46,9 +51,11 @@ module.exports =
     filterProxies: (p) -> p
         
     next: () ->
-        proxies = _.filter @all, (p) -> p.state != 'failed' and p.state != 'busy'
+        proxies = _.filter @all, (p) -> p.state == 'active'
         if not proxies.length
-            return null
+            proxies = _.filter @all, (p) -> p.state != 'failed' and p.state != 'busy'
+            if not proxies.length
+                return null
         p = proxies[Math.floor(Math.random() * (proxies.length - 1))];
         if !p.site
             p.site = new ExternalSite({
@@ -57,5 +64,5 @@ module.exports =
                 url: 'https://www.shutterstock.com',
                 proxy: p
             })
-        console.log 'Next proxy', p
+        console.log 'Next proxy', p, @inspect()
         return p

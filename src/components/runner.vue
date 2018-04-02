@@ -19,12 +19,15 @@
     export default {
         props: ['runnableFactory', 'info'],
         data(){
-            return {state:'idle', cycleNumber: 0, lastResult: '', runnable:{info:()=>{}}}
+            return {state:'idle', cycleNumber: 0, lastResult: ''}
         },
         computed:{
             toggleDisabled(){
                 return (this.state == 'starting' || this.state == 'stopping')
             },
+        },
+        created(){
+            this.runnable = {info:()=>{}}
         },
         methods: {
             actionName(){
