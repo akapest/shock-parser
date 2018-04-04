@@ -15,7 +15,7 @@ bus = require('../bus.coffee')
 {SiteError, ExternalError, UnauthorizedError} = require './errors.coffee'
 
 DEFAULT_EXTERNAL_REQUEST_TIMEOUT = 12000 # ms
-
+randomUseragent = require('random-useragent');
 
 class ExternalSite
     constructor: ({url, xhrUrl, @defaultHeaders, @settings, @encoding, @defaultCheckLogged, @proxy}={})->
@@ -32,18 +32,19 @@ class ExternalSite
     reset: ->
         host = @url.replace('http://','').replace('https://', '').replace(/\/$/, '')
         @headers = _.extend {},
-            Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
-            'Accept-Encoding': 'gzip, deflate, sdch'
-            'Accept-Language': 'de-DE,de;q=0.8,en-US;q=0.6,en;q=0.4'
+            Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8"
+            'Accept-Encoding': 'gzip, deflate'
+            'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7'
             'Cache-Control': 'max-age=0'
-            'Connection': 'keep-alive'  
+#            'Connection': 'keep-alive'
             DNT: 1
-            Host: host
-            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.90 Safari/537.36'
+#            cookie: '__cfduid=dcb2e50c2601c81a633b8a6166e1181851522692251; cf_clearance=74e6bdb84cff620688a81777c997aba458ca7279-1522692256-86400; _ym_uid=1522692256123744806; _ym_isad=1; _ga=GA1.2.13144702.1522692257; _gid=GA1.2.549502026.1522692257; _ym_visorc_42065329=w; jv_enter_ts_PeHzjrJoSL=1522692259856; jv_visits_count_PeHzjrJoSL=1; jv_refer_PeHzjrJoSL=https%3A%2F%2Fhidemy.name%2Fru%2Fproxy-list%2F; jv_utm_PeHzjrJoSL=; PAPVisitorId=45a289001a4c12081d18d5d4d499ce*0; jv_invitation_time_PeHzjrJoSL=1522692384041; jv_pages_count_PeHzjrJoSL=5'
+#            Host: host
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36' #randomUseragent.getRandom()
             'Upgrade-Insecure-Requests': 1
         , @defaultHeaders
-        @headers.Origin = @origin if @origin
-        @headers.Referer = @origin if @origin
+#        @headers.Origin = @origin if @origin
+        @headers.Referer = 'https://hidemy.name/ru/proxy-list/?maxtime=500&type=s4' # @origin if @origin
 
         @cookie = request.jar()
         @http = request.defaults
@@ -81,7 +82,7 @@ class ExternalSite
         options = _.extend {}, @options, options
         @lastUrl = @url + relativeUrl
 
-        @before @lastUrl, {options}
+#        @before @lastUrl, {options}
         {headers, method, form, json, body, checkLogged, accountName, reload, encoding} = options
         accountName ?= @accountName
 
@@ -102,12 +103,15 @@ class ExternalSite
 
         if @proxy
             p = @proxy
-            httpOptions.proxy = p.protocols[0] + '://' + p.ipAddress + ':' + (p.port || 80)
+            try
+                httpOptions.proxy = (p.protocols?[0] || 'http') + '://' + p.ipAddress + ':' + (p.port || 80)
+            catch
+                debugger
 
         @http @lastUrl, httpOptions, (error, response) =>
             error = @handleExternalErrorIfAny({error, response, relativeUrl, options, accountName})
 #                @dump response
-            console.log 'RESPONSE', {error, response}
+#            console.log 'RESPONSE', {error, response}
             return resolve {error} if error
             {parseHtml} = options
             parseHtml ?= true
@@ -115,11 +119,11 @@ class ExternalSite
                 json = JSON.parse response.body
             else if parseHtml
                 $ = cheerio.load(response.body)
-                if @checkPageForCaptcha($)
+#                if @checkPageForCaptcha($)
     #                @site.dump response
-                    @captcha = {id: Math.random(), url:@lastUrl, headers, isCaptcha:true}
-                    bus.$emit('show:captcha', {@captcha, resolveCaptcha: => @captcha = false})
-                    return resolve {error:@captcha}
+#                    @captcha = {id: Math.random(), url:@lastUrl, headers, isCaptcha:true}
+#                    bus.$emit('show:captcha', {@captcha, resolveCaptcha: => @captcha = false})
+#                    return resolve {error:@captcha}
                 try
                     if checkLogged and not @isLogged(response, accountName)
                         return resolve error: @externalError('Not authorized', {relativeUrl, response, accountName, form, Error: UnauthorizedError})

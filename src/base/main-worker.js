@@ -4,7 +4,6 @@ import moment from 'moment'
 import {takeText, parseImages, parseTotal} from './parse.js'
 import Promise from 'bluebird'
 import proxies from './proxies.coffee'
-const unknown = '?'
 function forceGC(){
     if (global.gc) {
         global.gc();
@@ -12,7 +11,7 @@ function forceGC(){
         console.warn('No GC hook! Start your program as `node --expose-gc file.js`.');
     }
 }
-
+const unknown = '?'
 export default class MainWorker {
     constructor({term, maxJobs, delay}={}){
         console.log('Created global parser: ', term)
@@ -21,16 +20,19 @@ export default class MainWorker {
         this.jobs = []
         this.fetched = 0
         this.page = 0 // pointer
-        this.maxJobs = maxJobs || 100
+        this.maxJobs = maxJobs || 1000
         this.delay = delay || 200
-        this.startMoment = moment()
+        this.pagesToFetch = [] // from - to
         this.fetchedPages = [] // much memory
         this.failedPages = []
     }
     startPromise(){
-        return proxies.init()
+        return proxies.init({sitesPerProxy:3, pagesPerProxy:20})
     }
     cycle(cycleN){
+        if (!this.startMoment){
+            this.startMoment = moment()
+        }
         this.inspect({cycleN})
         if (this.fetched == this.totalPages){
             if (!this.endMoment) {
@@ -41,15 +43,16 @@ export default class MainWorker {
         }
         let max = this.maxJobs - this.jobs.length
         _.each(_.range(0, max), (n) => {
-            Promise.delay(this.delay*n).then(()=>this.nextJob())
+            Promise.delay(5).then(()=>this.nextJob())
         })
-        return Promise.delay(11000).then(()=>{return {result: max}})
+        forceGC()
+        return Promise.delay(5000).then(()=>{return {done: false, result: max || 'skip'}})
     }
     info(){
-        return this.fetched + '/' + this.totalPages
+        return this.fetched + '/' + this.totalPages + '   ' + ((this.fetched+this.failedPages.length)/moment().diff(this.startMoment, 'seconds')) + ' rps'
     }
     inspect({cycleN}){
-        console.log({cycleN, term: this.term, page:this.page, total:this.totalPages, fetched:this.fetched, pages: this.fetchedPages, progress: this.progress()})
+        console.log('CYCLE', {cycleN, term: this.term, page:this.page, total:this.totalPages, fetched:this.fetched, failed: this.failedPages, pages: this.fetchedPages, progress: this.progress()})
     }
     progress(){
         if (unknown == this.totalPages)
@@ -58,6 +61,11 @@ export default class MainWorker {
     }
     nextPage(){
         this.page++
+        if (this.page >= this.totalPages) {
+            let page = this.failedPages.unshift()
+            console.log('refetch failed page', + page)
+            return this.failedPages.unshift()
+        }
         return this.page
         // let page = Math.random() * this.totalPages
         // this.pages.push(page)
@@ -72,7 +80,7 @@ export default class MainWorker {
             return Promise.resolve()
         }
         let jobStart = moment()
-        let url = '/search?searchterm='+this.term+'&search_source=base_search_form&language=en&page='+page+'&sort=popular&image_type=vector&measurement=px&safe=true'
+        let url = '/search?searchterm='+this.term+'&search_source=base_search_form&language=en&page='+page+'&image_type=vector'
         let promise = proxies.fetchPage(url)
             .catch((err)=>{
                 console.error('Failed to fetch page: ' + page, err)
@@ -81,11 +89,15 @@ export default class MainWorker {
             .then(({$})=>{
                 this.fetched++
                 this.fetchedPages.push(page)
+                this.fetchedPages.sort((a, b) => a - b)
                 let images = parseImages($, page-1)
                 if (this.totalPages == unknown){
                     this.totalPages = parseTotal($)
                 }
-                this.page = page
+                if (!images.length){
+                    console.error('Failed to fetch items, page: ' + page)
+                    this.failedPages.push(page)
+                }
                 let positions = _.map(images, ({id, position})=>{return {imageId:id, globalVector:true, term:null, position, date:new Date()}})
                 return Position.insertMany(positions)
                     .then((result)=>{
@@ -98,12 +110,12 @@ export default class MainWorker {
                     .finally(()=>{
                         let i = _.findIndex(this.jobs, (j)=>{return j.page == page})
                         this.jobs.splice(i,1)
-                        console.log('JOB TIME', {seconds: moment().diff(jobStart, 'seconds')})
-                        forceGC()
+                        console.log('JOB TIME', job, {l: images.length, seconds: moment().diff(jobStart, 'seconds')})
                     })
             })
         let job = {page, url, promise}
         this.jobs.push(job)
+        console.log('JOBS length', this.jobs.length)
         return job.promise
     }
     save(){

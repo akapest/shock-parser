@@ -23,12 +23,13 @@ function parseImages($, offset, portfolio) {
     }).toArray()
     return images
 }
+const sep = /\s+/
 function parseTotal($){
     const text = $('.page-max').first().text()
     if (text) {
         let units, thousands;
-        if (text.indexOf('.') >= 0){
-            [thousands, units] = text.split('.')
+        if (sep.test(text)){
+            [thousands, units] = text.split(sep)
         } else {
             thousands = '0'
             units = text
