@@ -13,7 +13,7 @@
             </thead>
             <tbody>
                 <tr v-for="item in portfolios">
-                    <td v-if="isModifiable(item)"><editable @change="update(item, $event)" :field="{key: 'name'}" :value="item.name"></editable></td>
+                    <td v-if="isModifiable(item)"><editable :field="{key: 'name'}" :value="item.name"></editable></td>
                     <td v-if="!isModifiable(item)">{{item.name}}</td>
                     <td>{{timeView(item.createdAt)}}</td>
                     <td>{{timeView(item.updatedAt)}}</td>
@@ -31,7 +31,9 @@
             <button class="bttn" @click="addAccount">Добавить</button>
             <!--<button class="bttn" @click="remove">Remove all portfolios</button>-->
         </div>
-        <div class="mhm">
+        <editable @change="updateRange('start', $event)" :field="{label:'Начать с ', type:'number'}" :value="start"></editable>
+        <editable @change="updateRange('end', $event)" :field="{label:'до ', type:'number'}" :value="end"></editable>
+        <div class="mhm" v-show="inited">
             <runner :runnableFactory="getGlobalParser"/>
         </div>
     </div>
@@ -54,11 +56,12 @@
         domain: 'shutterstock.com',
         url: 'https://www.shutterstock.com',
     })
+
     function defaultFetch(){ return  {running: false, page: 0, total: '?'} }
 
     export default {
         data(){
-            return {portfolios:[], show:true}
+            return {inited: false, portfolios:[], show:true, start: 1000, end: 10000}
         },
         components: {editable},
         watch: {
@@ -93,6 +96,7 @@
                     let args = [0, this.portfolios.length]
                     args = args.concat(result)
                     this.portfolios.splice.apply(this.portfolios, args)
+                    this.inited = true
                     this.rerender()
                 })
             },
@@ -112,6 +116,12 @@
                 .then(()=>{
                     this.getPortfolios()
                 })
+            },
+            updateRange(key, {value}){
+                this[key] = value
+                if (key == 'start' && value >= this.end)
+                    this.end = value + 1000
+                this.rerender()
             },
             removeAccount(account){
                 let confirm = window.confirm('Remove account?')

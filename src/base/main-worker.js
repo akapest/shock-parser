@@ -4,6 +4,7 @@ import moment from 'moment'
 import {takeText, parseImages, parseTotal} from './parse.js'
 import Promise from 'bluebird'
 import proxies from './proxies.coffee'
+import Planner from './fetch-planner.coffee'
 function forceGC(){
     if (global.gc) {
         global.gc();
@@ -11,23 +12,74 @@ function forceGC(){
         console.warn('No GC hook! Start your program as `node --expose-gc file.js`.');
     }
 }
+import db from '../db/api.coffee'
+import Image from '../db/image.coffee'
+
+let imagesIds = [] 
+
+db.get(Image, {query: {}, options:{sort:{position:1}}})
+.then((results)=>{
+    imagesIds = results.map((item) => item.id)
+})
+let found = 0
+function round(n, digits){
+    digits = digits || 2
+    let tens = Math.pow(10, digits)
+    return Math.round(n * tens) / tens
+
+}
+function getPositions(images, term){
+    let filtered = _.filter(images, ({id})=> imagesIds.indexOf(id) >= 0)
+    if (filtered.length) {
+        found += filtered.length
+    }
+    let date = new Date()
+    let day = moment().dayOfYear()
+    return _.map(filtered, ({id, position})=>{return {imageId:id, term, position, date, day}})
+}
+
 const unknown = '?'
 export default class MainWorker {
     constructor({term, maxJobs, delay}={}){
         console.log('Created global parser: ', term)
+        let offset = 146000, total = 147000
         this.term = term
-        this.totalPages = unknown
+        this.totalPages = total - offset
+        this.last = total
         this.jobs = []
         this.fetched = 0
-        this.page = 0 // pointer
-        this.maxJobs = maxJobs || 1000
-        this.delay = delay || 200
-        this.pagesToFetch = [] // from - to
-        this.fetchedPages = [] // much memory
+        this.maxJobs = maxJobs || 100
+        this.fetchedPages = []
         this.failedPages = []
+        this.planner = new Planner({offset, total, segments:10})
     }
     startPromise(){
-        return proxies.init({sitesPerProxy:3, pagesPerProxy:20})
+        return proxies.init({sitesPerProxy:2, pagesPerProxy:20})
+            // .then(()=>this.nextJob({direct:true}))
+    }
+    info(){
+        return [this.progress({str:true}), this.rps(), this.time(), this.found()].join(', \t')
+    }
+    time(){
+        if (!this.startMoment) return proxies.info()
+        return round(moment().diff(this.startMoment, 'seconds')/60) + 'mins'
+    }
+    found(){
+        return 'found: ' + found
+    }
+    rps(){
+        return round((this.fetched+this.failedPages.length)/moment().diff(this.startMoment, 'seconds')) + ' rps'
+    }
+    progress({str}={}){
+        if (str){
+            return this.fetched + '/' + this.totalPages
+        }
+        if (unknown == this.totalPages)
+            return 0
+        return this.fetched/this.totalPages*100
+    }
+    inspect({cycleN}){
+        console.log('CYCLE', {cycleN, info: this.info(), found, term: this.term, fetched:this.fetched, failed: this.failedPages, pages: this.fetchedPages, progress: this.progress()})
     }
     cycle(cycleN){
         if (!this.startMoment){
@@ -46,42 +98,29 @@ export default class MainWorker {
             Promise.delay(5).then(()=>this.nextJob())
         })
         forceGC()
-        return Promise.delay(5000).then(()=>{return {done: false, result: max || 'skip'}})
+        return Promise.delay(5000).then(()=>{return {done: this.done, result: max || 'skip'}})
     }
-    info(){
-        return this.fetched + '/' + this.totalPages + '   ' + ((this.fetched+this.failedPages.length)/moment().diff(this.startMoment, 'seconds')) + ' rps'
-    }
-    inspect({cycleN}){
-        console.log('CYCLE', {cycleN, term: this.term, page:this.page, total:this.totalPages, fetched:this.fetched, failed: this.failedPages, pages: this.fetchedPages, progress: this.progress()})
-    }
-    progress(){
-        if (unknown == this.totalPages)
-            return 0
-        return this.fetched/this.totalPages*100
-    }
-    nextPage(){
-        this.page++
-        if (this.page >= this.totalPages) {
-            let page = this.failedPages.unshift()
-            console.log('refetch failed page', + page)
-            return this.failedPages.unshift()
-        }
-        return this.page
-        // let page = Math.random() * this.totalPages
-        // this.pages.push(page)
-        // return page
-    }
-    nextJob(){
+    nextJob({direct}={}){
         if (this.jobs.length >= this.maxJobs){
             return Promise.resolve()
         }
-        let page = this.nextPage()
-        if (page > this.totalPages) {
-            return Promise.resolve()
+        let page=1, segment
+        if (this.planner) {
+            let next = this.planner.next()
+            if (next) {
+                page = next.page
+                segment = next.segment
+                if (page > this.last || ! page) {
+                    this.done = true
+                    return Promise.resolve()
+                }
+            } else {
+                return Promise.resolve()
+            }
         }
         let jobStart = moment()
         let url = '/search?searchterm='+this.term+'&search_source=base_search_form&language=en&page='+page+'&image_type=vector'
-        let promise = proxies.fetchPage(url)
+        let promise = proxies.fetchPage(url, {direct})
             .catch((err)=>{
                 console.error('Failed to fetch page: ' + page, err)
                 this.failedPages.push(page)
@@ -91,14 +130,17 @@ export default class MainWorker {
                 this.fetchedPages.push(page)
                 this.fetchedPages.sort((a, b) => a - b)
                 let images = parseImages($, page-1)
-                if (this.totalPages == unknown){
-                    this.totalPages = parseTotal($)
-                }
+                // if (this.totalPages == unknown){
+                //     this.totalPages = parseTotal($)
+                // }
                 if (!images.length){
                     console.error('Failed to fetch items, page: ' + page)
                     this.failedPages.push(page)
                 }
-                let positions = _.map(images, ({id, position})=>{return {imageId:id, globalVector:true, term:null, position, date:new Date()}})
+                let positions = getPositions(images)
+                if (segment) {
+                    segment.addFound(positions.length)
+                }
                 return Position.insertMany(positions)
                     .then((result)=>{
                         return {result}

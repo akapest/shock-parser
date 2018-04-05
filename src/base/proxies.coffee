@@ -6,7 +6,8 @@ EventEmitter = require('events').EventEmitter || require('events');
 getProtocols = (text) ->
     return text.toLowerCase().split(', ')
 emitter = new EventEmitter()
-headers = {cookie:'__cfduid=dcb2e50c2601c81a633b8a6166e1181851522692251; cf_clearance=74e6bdb84cff620688a81777c997aba458ca7279-1522692256-86400; _ym_uid=1522692256123744806; _ym_isad=1; _ga=GA1.2.13144702.1522692257; _gid=GA1.2.549502026.1522692257; _ym_visorc_42065329=w; jv_enter_ts_PeHzjrJoSL=1522692259856; jv_visits_count_PeHzjrJoSL=1; jv_refer_PeHzjrJoSL=https%3A%2F%2Fhidemy.name%2Fru%2Fproxy-list%2F; jv_utm_PeHzjrJoSL=; PAPVisitorId=45a289001a4c12081d18d5d4d499ce*0; jv_invitation_time_PeHzjrJoSL=1522692384041; jv_pages_count_PeHzjrJoSL=5'}
+Promise = require 'bluebird'
+headers = {cookie:'_ga=GA1.2.13144702.1522692257; jv_enter_ts_PeHzjrJoSL=1522692259856; jv_visits_count_PeHzjrJoSL=1; jv_refer_PeHzjrJoSL=https%3A%2F%2Fhidemy.name%2Fru%2Fproxy-list%2F; jv_utm_PeHzjrJoSL=; PAPVisitorId=45a289001a4c12081d18d5d4d499ce*0; jv_enter_ts_EBSrukxUuA=1522694550572; jv_visits_count_EBSrukxUuA=1; jv_utm_EBSrukxUuA=; __cfduid=dba25612ece85d69d85c4befa2aa1e7fd1522748563; _ym_uid=1522748563179192908; PHPSESSID=t6aqh662arc150rijto31mhke0; jv_pages_count_EBSrukxUuA=19; _ym_isad=1; _gid=GA1.2.954722394.1522854158; _dc_gtm_UA-90263203-1=1; _ym_visorc_42065329=w; cf_clearance=b3cc88c1f6a61c5b4f35063ee4fd83d79ab8c28c-1522854171-86400; jv_pages_count_PeHzjrJoSL=10'}
 hmn = new ExternalSite({
     id: 'HMN',
     domain: 'hidemy.name',
@@ -41,19 +42,22 @@ getProxies = ->
         getProxyPage 1
         getProxyPage 2
         getProxyPage 3
-    ]).then ->
+    ]).finally ->
         emitter.emit('end');
     return emitter
 
 ProxyLists.addSource('hidemy.name', { homeUrl: 'https://hidemy.name', getProxies})
 
 module.exports =
+    log: -> console.log 'Proxies: ' + @info()
+    info: ->  '.'.repeat(@all.length/200)
     init: ({sitesPerProxy, pagesPerProxy}={}) ->
         return Promise.resolve() if @inited
         @inited = true
         @all = []
         @maxSitesPerProxy = sitesPerProxy ? 3
         @maxPagesPerSite = pagesPerProxy ? 20
+
         new Promise (resolve, reject)=>
             gettingProxies = ProxyLists.getProxies {
                 countries: null # any
@@ -61,12 +65,12 @@ module.exports =
             }
             gettingProxies.on 'data', (proxies) =>
                 @all = @all.concat this.filterProxies proxies
-                console.log 'Proxies count: ' + @all.length
+                this.log()
             
             gettingProxies.on 'error', (error) =>  console.log error # one of sources failed
                 
             gettingProxies.once 'end',  =>
-                console.log 'Proxies count: ' + @all.length
+                this.log()
                 if @all.length
                     resolve true
                 else
@@ -77,7 +81,14 @@ module.exports =
     filter: (state) ->
         _.filter @all, (p) -> p.state == state
 
-    fetchPage: (url) ->
+    fetchPage: (url, {direct}={}) ->
+        if (direct)
+            site = new ExternalSite({
+                id: 'SS',
+                domain: 'shutterstock.com',
+                url: 'https://www.shutterstock.com',
+            })
+            return site.getPage url
         {proxy, site} = this.next()
         if proxy == null
             console.log('no proxy available')
@@ -88,7 +99,7 @@ module.exports =
         .then (result) =>
             time = moment().diff(start, 'seconds')
             site.busy = false
-            site.results.push {time, result}
+            site.results.push {time}
             if site.results.length >= @maxPagesPerSite
                 console.log 'Site GONE', site.results
                 _.remove(proxy.sites, (s) -> s == site)
@@ -101,6 +112,9 @@ module.exports =
                 console.log m, proxy, result
                 proxy.state = 'failed'
                 return this.fetchPage(url)
+        .catch (e) =>
+            console.warn e
+            return this.fetchPage(url)
                     
     filterProxies: (p) -> p
 

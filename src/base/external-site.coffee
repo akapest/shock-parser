@@ -75,14 +75,14 @@ class ExternalSite
     setOptions: (@options) -> #
 
     # the method automatically checks if the result page is "authorized against" the specified username with help of isLogged method
-    getPage: (relativeUrl, options={}) => new Promise (resolve, reject) =>
+    getPage: (relativeUrl, options={}) => new Promise((resolve, reject) =>
         if @captcha
             Promise.delay(5000).then => {error: @captcha}
 
         options = _.extend {}, @options, options
         @lastUrl = @url + relativeUrl
 
-#        @before @lastUrl, {options}
+        @before @lastUrl, {options}
         {headers, method, form, json, body, checkLogged, accountName, reload, encoding} = options
         accountName ?= @accountName
 
@@ -111,7 +111,7 @@ class ExternalSite
         @http @lastUrl, httpOptions, (error, response) =>
             error = @handleExternalErrorIfAny({error, response, relativeUrl, options, accountName})
 #                @dump response
-#            console.log 'RESPONSE', {error, response}
+            console.log 'RESPONSE', {error, response}
             return resolve {error} if error
             {parseHtml} = options
             parseHtml ?= true
@@ -130,6 +130,7 @@ class ExternalSite
                 catch e
                     return resolve error: @externalError(e.message, {relativeUrl, response, accountName, form})
             resolve({response, $, json, reject, status: response.statusCode, dump: @dump})
+    ).timeout(60000)
 
     login: ({login, username, password}, options={}) ->
         @_restoreSession username
